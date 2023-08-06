@@ -5,7 +5,7 @@ DECLARE
   -- Variables for batch processing
   l_batch_size NUMBER := 1000; -- You can adjust the batch size based on your system's resources
   l_total_rows NUMBER := 0;
-
+////
 BEGIN
   -- Populate the update data into the collection.
   -- You can customize this query based on your specific update criteria.
