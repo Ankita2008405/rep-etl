@@ -1,0 +1,58 @@
+DECLARE
+  TYPE t_update_rows IS TABLE OF your_table%ROWTYPE;
+  l_update_data t_update_rows;
+
+  -- Variables for batch processing
+  l_batch_size NUMBER := 1000; -- You can adjust the batch size based on your system's resources
+  l_total_rows NUMBER := 0;
+
+BEGIN
+  -- Populate the update data into the collection.
+  -- You can customize this query based on your specific update criteria.
+  SELECT * BULK COLLECT INTO l_update_data
+  FROM your_table
+  WHERE -- Your update conditions here;
+
+  -- Loop through the data in batches and update the table.
+  WHILE l_total_rows < l_update_data.COUNT LOOP
+    FOR i IN 1 .. l_batch_size LOOP
+      -- Perform the necessary updates here on l_update_data(i).
+      -- For example, you can use the following syntax:
+      -- l_update_data(i).column_name := new_value;
+
+      -- Increment the total rows processed so far.
+      l_total_rows := l_total_rows + 1;
+    END LOOP;
+
+    -- Use FORALL to update the batch of rows at once.
+    FORALL j IN 1 .. l_batch_size
+      UPDATE your_table
+      SET column1 = l_update_data(j).column1, -- Update columns as needed
+          column2 = l_update_data(j).column2
+      WHERE primary_key_column = l_update_data(j).primary_key_column;
+    
+    -- Commit the changes for the batch.
+    COMMIT;
+  END LOOP;
+  
+  -- If there are any remaining rows after the loop, update them here.
+  FORALL j IN 1 .. (l_update_data.COUNT - l_total_rows)
+    UPDATE your_table
+    SET column1 = l_update_data(l_total_rows + j).column1, -- Update columns as needed
+        column2 = l_update_data(l_total_rows + j).column2
+    WHERE primary_key_column = l_update_data(l_total_rows + j).primary_key_column;
+  
+  -- Commit the changes for any remaining rows.
+  COMMIT;
+  
+  -- Output the number of rows updated.
+  DBMS_OUTPUT.PUT_LINE('Total rows updated: ' || l_update_data.COUNT);
+
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Handle exceptions here (e.g., rollback and/or log errors).
+    ROLLBACK;
+    DBMS_OUTPUT.PUT_LINE('Error occurred: ' || SQLERRM);
+    RAISE;
+END;
+/
